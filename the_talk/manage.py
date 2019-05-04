@@ -1,6 +1,6 @@
-#!/usr/bin/env python
 import os
 import sys
+from pythainlp.tokenize import word_tokenize, isthai #use for joblib predict
 
 if __name__ == '__main__':
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'the_talk.settings')
