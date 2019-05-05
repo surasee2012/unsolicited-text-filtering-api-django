@@ -2,35 +2,36 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from .serializers import TextSerializer
-from .predictors import predict
+from .predictors import predict, predict_proba
 
 
 class Api(APIView):
+
+    def map_result_to_json(self, preds, probas):
+        clf_names = ['agg', 'obs', 'spm']
+        json = {}
+        for i in range(len(preds[0])):
+            result = {}
+            for j in range(len(clf_names)):
+                clf = {}
+                clf['pred'] = preds[j][i]
+                clf['prob_0'] = probas[j][i][0]
+                clf['prob_1'] = probas[j][i][1]
+                result[clf_names[j]] = clf
+
+            json[str(i)] = result
+        return json
+
     def post(self, request):
         serializer = TextSerializer(data=request.data)
 
         if serializer.is_valid():
-            text = serializer.data['text']
+            texts = serializer.data['texts']
 
-            predict_result = predict(text)
+            preds = predict(texts)
+            probas = predict_proba(texts)
 
-            return Response({
-                'agg': {
-                    'result': predict_result[0][0],
-                    'prob_0': predict_result[0][1][0],
-                    'prob_1': predict_result[0][1][1],
-                },
-                'obs': {
-                    'result': predict_result[1][0],
-                    'prob_0': predict_result[1][1][0],
-                    'prob_1': predict_result[1][1][1],
-                },
-                'spm': {
-                    'result': predict_result[2][0],
-                    'prob_0': predict_result[2][1][0],
-                    'prob_1': predict_result[2][1][1],
-                }
-            }, headers={
+            return Response(self.map_result_to_json(preds, probas), headers={
                 'Access-Control-Allow-Origin': '*'
             })
         else:
